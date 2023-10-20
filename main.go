@@ -1,9 +1,5 @@
 //go:build windows
 
-// currently working examples:
-// .\goloader.exe -t local_process_execution -w .\tmp\calc.raw
-// .\goloader.exe -t local_process_execution -w .\tmp\calc.enc -k AAAAAAAAAAaaaaaaaaaaAAAAAAAAAAaa
-
 package main
 
 import (
