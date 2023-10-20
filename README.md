@@ -1,7 +1,7 @@
 # goloader
-##a shellcode loader written in GO.
+## a shellcode loader written in GO.
 
-###the aim is to have a tool which is also a collection of different injection methods
+### the aim is to have a tool which is also a collection of different injection methods
 
 ```
 .\goloader.exe -h
