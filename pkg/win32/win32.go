@@ -1,4 +1,4 @@
-package main
+package win32
 
 import (
 	"fmt"
@@ -31,21 +31,22 @@ const (
 )
 
 var (
-	kernel32 = syscall.NewLazyDLL("kernel32.dll")
+	Kernel32 = syscall.NewLazyDLL("kernel32.dll")
 
-	RtlMoveMemory       = kernel32.NewProc("RtlMoveMemory")
-	VirtualAlloc        = kernel32.NewProc("VirtualAlloc")
-	VirtualAllocEx      = kernel32.NewProc("VirtualAllocEx")
-	VirtualProtect      = kernel32.NewProc("VirtualProtect")
-	VirtualProtectEx    = kernel32.NewProc("VirtualProtectEx")
-	OpenProcess         = kernel32.NewProc("OpenProcess")
-	WriteProcessMemory  = kernel32.NewProc("WriteProcessMemory")
-	GetProcAddress      = kernel32.NewProc("GetProcAddress")
-	CreateRemoteThread  = kernel32.NewProc("CreateRemoteThread")
-	WaitForSingleObject = kernel32.NewProc("WaitForSingleObject")
-	GetExitCodeThread   = kernel32.NewProc("GetExitCodeThread")
-	CloseHandle         = kernel32.NewProc("CloseHandle")
-	VirtualFreeEx       = kernel32.NewProc("VirtualFreeEx ")
+	RtlMoveMemory       = Kernel32.NewProc("RtlMoveMemory")
+	VirtualAlloc        = Kernel32.NewProc("VirtualAlloc")
+	VirtualAllocEx      = Kernel32.NewProc("VirtualAllocEx")
+	VirtualProtect      = Kernel32.NewProc("VirtualProtect")
+	VirtualProtectEx    = Kernel32.NewProc("VirtualProtectEx")
+	OpenProcess         = Kernel32.NewProc("OpenProcess")
+	WriteProcessMemory  = Kernel32.NewProc("WriteProcessMemory")
+	GetProcAddress      = Kernel32.NewProc("GetProcAddress")
+	CreateRemoteThread  = Kernel32.NewProc("CreateRemoteThread")
+	WaitForSingleObject = Kernel32.NewProc("WaitForSingleObject")
+	GetExitCodeThread   = Kernel32.NewProc("GetExitCodeThread")
+	CloseHandle         = Kernel32.NewProc("CloseHandle")
+	VirtualFreeEx       = Kernel32.NewProc("VirtualFreeEx")
+	EnumProcesses       = Kernel32.NewProc("EnumProcesses")
 )
 
 // Reserves, commits, or changes the state of a region of pages in the virtual address space of the calling process. Memory allocated by this function is automatically initialized to zero.
@@ -365,4 +366,24 @@ func VirtualFreeExCall(hProcess uintptr, lpAddress uintptr, dwSize uintptr, dwFr
 		dwFreeType,
 	)
 	return int(retval), err
+}
+
+// Retrieves the process identifier for each process object in the system
+// RTFM at https://learn.microsoft.com/en-us/windows/win32/api/psapi/nf-psapi-enumprocesses
+//
+// *lpidProcess - A pointer to an array that receives the list of process identifiers.
+//
+// cb - The size of the pProcessIds array, in bytes.
+//
+// lpcbNeeded - the number of bytes returned in the pProcessIds array.
+//
+// returns a nonzero value upon success, 0 otherwise
+func EnumProcessesCall(lpidProcess uintptr, cb uintptr, lpcbNeeded uintptr) (int, error, []byte) {
+	var processes []byte
+	retval, _, err := EnumProcesses.Call(
+		(uintptr)(unsafe.Pointer(&processes[0])),
+		uintptr(len(processes)),
+		lpcbNeeded,
+	)
+	return int(retval), err, nil
 }
