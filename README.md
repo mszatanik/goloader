@@ -5,6 +5,10 @@
 ```
 .\goloader.exe -h
 Usage of goloader.exe:
+ -amsi
+        bypass AMSI
+  -etw
+        bypass ETW
   -k string
         a 32 char long key used to decrypt the file
   -p uint
@@ -18,4 +22,7 @@ Usage of goloader.exe:
 currently working examples:
 .\goloader.exe -t local_process_execution -w .\tmp\calc.raw
 .\goloader.exe -t local_process_execution -w .\tmp\calc.enc -k AAAAAAAAAAaaaaaaaaaaAAAAAAAAAAaa
+.\goloader.exe -t remote_process_execution -w .\tmp\calc.raw
+.\goloader.exe -t remote_process_execution -w .\tmp\calc.enc -k AAAAAAAAAAaaaaaaaaaaAAAAAAAAAAaa
+.\goloader.exe -t local_process_execution -w .\tmp\calc.raw --etw
 ```
