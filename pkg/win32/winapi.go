@@ -1,7 +1,7 @@
 package win32
 
 import (
-	"fmt"
+	"log"
 	"unsafe"
 )
 
@@ -18,7 +18,7 @@ import (
 //
 // returns the base address of the allocated region of pages, nil otherwise
 func VirtualAllocCall(lpAddress uintptr, dwSize uintptr, flAllocationType uintptr, flProtect uintptr) (uintptr, error) {
-	fmt.Println("[*] VirtualAlloc")
+	log.Println("[*] VirtualAlloc")
 	retval, _, err := VirtualAlloc.Call(
 		lpAddress,
 		dwSize,
@@ -47,7 +47,7 @@ func VirtualAllocCall(lpAddress uintptr, dwSize uintptr, flAllocationType uintpt
 //
 // returns the base address of the allocated region of pages, nil otherwise
 func VirtualAllocExCall(hProcess uintptr, lpAddress uintptr, dwSize uintptr, flAllocationType uintptr, flProtect uintptr) (uintptr, error) {
-	fmt.Println("[*] VirtualAllocEx")
+	log.Println("[*] VirtualAllocEx")
 	retval, _, err := VirtualAllocEx.Call(
 		hProcess,
 		lpAddress,
@@ -75,7 +75,7 @@ func VirtualAllocExCall(hProcess uintptr, lpAddress uintptr, dwSize uintptr, flA
 //
 // returns nil of success, otherwise err if the retval is zero
 func VirtualProtectCall(lpAddress uintptr, dwSize uintptr, flNewProtect uintptr, lpflOldProtect uintptr) error {
-	fmt.Println("[*] VirtualProtect")
+	log.Println("[*] VirtualProtect")
 	retval, _, err := VirtualProtect.Call(
 		lpAddress,
 		dwSize,
@@ -104,7 +104,7 @@ func VirtualProtectCall(lpAddress uintptr, dwSize uintptr, flNewProtect uintptr,
 //
 // returns nil of success, otherwise err if the lpflOldProtect is zero
 func VirtualProtectExCall(hProcess uintptr, lpAddress uintptr, dwSize uintptr, flNewProtect uintptr) (uintptr, error) {
-	fmt.Println("[*] VirtualProtectEx")
+	log.Println("[*] VirtualProtectEx")
 	var lpflOldProtect uintptr
 	_, _, err := VirtualProtectEx.Call(
 		hProcess,
@@ -133,7 +133,7 @@ func VirtualProtectExCall(hProcess uintptr, lpAddress uintptr, dwSize uintptr, f
 //
 // returns lpNumberOfBytesWritten, otherwise err if lpNumberOfBytesWritten == 0
 func WriteProcessMemoryCall(hProcess uintptr, lpBaseAddress uintptr, lpBuffer uintptr, nSize uintptr) (int, error) {
-	fmt.Println("[*] WriteProcessMemory")
+	log.Println("[*] WriteProcessMemory")
 	lpNumberOfBytesWritten, _, err := WriteProcessMemory.Call(
 		hProcess,
 		lpBaseAddress,
@@ -159,7 +159,7 @@ func WriteProcessMemoryCall(hProcess uintptr, lpBaseAddress uintptr, lpBuffer ui
 //
 // returns open handle to the specified process, NULL otherwise
 func OpenProcessCall(dwDesiredAccess uintptr, bInheritHandle uintptr, dwProcessId uintptr) (uintptr, error) {
-	fmt.Println("[*] OpenProcess")
+	log.Println("[*] OpenProcess")
 	procHandle, _, err := OpenProcess.Call(
 		dwDesiredAccess,
 		bInheritHandle,
@@ -184,7 +184,7 @@ func OpenProcessCall(dwDesiredAccess uintptr, bInheritHandle uintptr, dwProcessI
 //
 // returns an open handle to the specified thread, NULL otherwise
 func OpenThreadCall(dwDesiredAccess uintptr, bInheritHandle uintptr, dwThreadId uintptr) (uintptr, error) {
-	fmt.Println("[*] OpenThread")
+	log.Println("[*] OpenThread")
 	threadHandle, _, err := OpenThread.Call(
 		dwDesiredAccess,
 		bInheritHandle,
@@ -223,7 +223,7 @@ func SuspendThreadCall(hThread uintptr) (int, error) {
 //
 // returns err
 func RtlMoveMemoryCall(Destination uintptr, Source uintptr, Length uintptr) error {
-	fmt.Println("[*] RtlMoveMemory")
+	log.Println("[*] RtlMoveMemory")
 	_, _, err := RtlMoveMemory.Call(
 		Destination,
 		Source,
@@ -242,7 +242,7 @@ func RtlMoveMemoryCall(Destination uintptr, Source uintptr, Length uintptr) erro
 //
 // returns address of the exported function or variable, NULL otherwise
 func GetProcAddressCall(hModule uintptr, lpProcName uintptr) (uintptr, error) {
-	fmt.Println("[*] GetProcAddress")
+	log.Println("[*] GetProcAddress")
 	procAddress, _, err := GetProcAddress.Call(
 		hModule,
 		lpProcName,
@@ -273,7 +273,7 @@ func GetProcAddressCall(hModule uintptr, lpProcName uintptr) (uintptr, error) {
 //
 // returns a handle to the new thread, NULL otherwise
 func CreateRemoteThreadCall(hProcess uintptr, lpThreadAttributes uintptr, dwStackSize uintptr, lpStartAddress uintptr, lpParameter uintptr, dwCreationFlags uintptr) (uintptr, error) {
-	fmt.Println("[*] CreateRemoteThread")
+	log.Println("[*] CreateRemoteThread")
 	var lpThreadId uint32 = 0
 	remoteThread, _, err := CreateRemoteThread.Call(
 		hProcess,
@@ -301,7 +301,7 @@ func CreateRemoteThreadCall(hProcess uintptr, lpThreadAttributes uintptr, dwStac
 //
 // returns uintptr code
 func WaitForSingleObjectCall(hHandle uintptr, dwMilliseconds uintptr) (uintptr, error) {
-	fmt.Println("[*] WaitForSingleObject")
+	log.Println("[*] WaitForSingleObject")
 	retval, _, err := WaitForSingleObject.Call(
 		hHandle,
 		dwMilliseconds,
@@ -319,7 +319,7 @@ func WaitForSingleObjectCall(hHandle uintptr, dwMilliseconds uintptr) (uintptr, 
 //
 // returns a nonzero value upon success, 0 otherwise
 func GetExitCodeThreadCall(hThread uintptr) (int, error) {
-	fmt.Println("[*] GetExitCodeThread")
+	log.Println("[*] GetExitCodeThread")
 	var lpExitCode uintptr = 0
 	_, _, err := GetExitCodeThread.Call(
 		hThread,
@@ -335,7 +335,7 @@ func GetExitCodeThreadCall(hThread uintptr) (int, error) {
 //
 // returns a nonzero value upon success, 0 otherwise
 func CloseHandleCall(hObject uintptr) (int, error) {
-	fmt.Println("[*] CloseHandle")
+	log.Println("[*] CloseHandle")
 	retval, _, err := CloseHandle.Call(hObject)
 	return int(retval), err
 }
@@ -353,7 +353,7 @@ func CloseHandleCall(hObject uintptr) (int, error) {
 //
 // returns a nonzero value upon success, 0 otherwise
 func VirtualFreeExCall(hProcess uintptr, lpAddress uintptr, dwSize uintptr, dwFreeType uintptr) (int, error) {
-	fmt.Println("[*] VirtualFreeEx")
+	log.Println("[*] VirtualFreeEx")
 	retval, _, err := VirtualFreeEx.Call(
 		hProcess,
 		lpAddress,
