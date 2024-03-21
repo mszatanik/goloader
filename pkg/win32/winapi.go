@@ -2,52 +2,7 @@ package win32
 
 import (
 	"fmt"
-	"syscall"
 	"unsafe"
-)
-
-const (
-	MEM_COMMIT             = 0x1000
-	MEM_RESERVE            = 0x2000
-	MEM_RELEASE            = 0x8000
-	PAGE_EXECUTE_READWRITE = 0x40
-	PAGE_EXECUTE_READ      = 0x20
-	PAGE_READWRITE         = 0x04
-
-	INFINITE = 0xFFFFFFFF
-
-	CREATE_PROCESS            = 0x0080
-	CREATE_THREAD             = 0x0002
-	DUP_HANDLE                = 0x0040
-	QUERY_INFORMATION         = 0x0400
-	QUERY_LIMITED_INFORMATION = 0x1000
-	SET_INFORMATION           = 0x0200
-	SET_QUOTA                 = 0x0100
-	SUSPEND_RESUME            = 0x0800
-	TERMINATE                 = 0x0001
-	VM_OPERATION              = 0x0008
-	VM_READ                   = 0x0010
-	VM_WRITE                  = 0x0020
-	ALL_ACCESS                = 0x001F0FFF
-)
-
-var (
-	Kernel32 = syscall.NewLazyDLL("kernel32.dll")
-
-	RtlMoveMemory       = Kernel32.NewProc("RtlMoveMemory")
-	VirtualAlloc        = Kernel32.NewProc("VirtualAlloc")
-	VirtualAllocEx      = Kernel32.NewProc("VirtualAllocEx")
-	VirtualProtect      = Kernel32.NewProc("VirtualProtect")
-	VirtualProtectEx    = Kernel32.NewProc("VirtualProtectEx")
-	OpenProcess         = Kernel32.NewProc("OpenProcess")
-	WriteProcessMemory  = Kernel32.NewProc("WriteProcessMemory")
-	GetProcAddress      = Kernel32.NewProc("GetProcAddress")
-	CreateRemoteThread  = Kernel32.NewProc("CreateRemoteThread")
-	WaitForSingleObject = Kernel32.NewProc("WaitForSingleObject")
-	GetExitCodeThread   = Kernel32.NewProc("GetExitCodeThread")
-	CloseHandle         = Kernel32.NewProc("CloseHandle")
-	VirtualFreeEx       = Kernel32.NewProc("VirtualFreeEx")
-	EnumProcesses       = Kernel32.NewProc("EnumProcesses")
 )
 
 // Reserves, commits, or changes the state of a region of pages in the virtual address space of the calling process. Memory allocated by this function is automatically initialized to zero.
@@ -216,6 +171,45 @@ func OpenProcessCall(dwDesiredAccess uintptr, bInheritHandle uintptr, dwProcessI
 	}
 
 	return procHandle, nil
+}
+
+// Opens an existing thread object
+// RTFM at https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-openthread
+//
+// dwDesiredAccess - The access to the thread object.
+//
+// bInheritHandle - If this value is TRUE, processes created by this process will inherit the handle. Otherwise, the processes do not inherit this handle.
+//
+// dwThreadId - dwThreadId
+//
+// returns an open handle to the specified thread, NULL otherwise
+func OpenThreadCall(dwDesiredAccess uintptr, bInheritHandle uintptr, dwThreadId uintptr) (uintptr, error) {
+	fmt.Println("[*] OpenThread")
+	threadHandle, _, err := OpenThread.Call(
+		dwDesiredAccess,
+		bInheritHandle,
+		dwThreadId,
+	)
+
+	if threadHandle != 0 {
+		return 0, err
+	}
+
+	return threadHandle, nil
+}
+
+// Suspends the specified thread
+// RTFM at https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-suspendthread
+//
+// hThread - A handle to the thread that is to be suspended.
+//
+// returns thread's previous suspend count; otherwise, it is (DWORD) -1.
+func SuspendThreadCall(hThread uintptr) (int, error) {
+	retval, _, err := SuspendThread.Call(hThread)
+	if int(retval) != -1 {
+		return -1, err
+	}
+	return int(retval), nil
 }
 
 // Copies the contents of a source memory block to a destination memory block, and supports overlapping source and destination memory blocks.
@@ -388,3 +382,86 @@ func EnumProcessesCall(lpidProcess uintptr, cb uintptr, lpcbNeeded uintptr) (int
 	)
 	return int(retval), err, nil
 }
+
+// Retrieves the context of the specified thread.
+// RTFM at https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getthreadcontext
+//
+// hThread - A handle to the thread whose context is to be retrieved. The handle must have THREAD_GET_CONTEXT access to the thread.
+//
+// return non-zero value, zero otherwise
+func GetThreadContextCall(hThread uintptr, lpContext CONTEXT) (CONTEXT, error) {
+	retval, _, err := GetThreadContext.Call(
+		hThread,
+		(uintptr)(unsafe.Pointer(&lpContext)),
+	)
+
+	if retval == 0 {
+		return lpContext, err
+	}
+
+	return lpContext, nil
+}
+
+// Sets the context for the specified thread.
+// RTFM at https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-setthreadcontext
+//
+// hThread - A handle to the thread whose context is to be set.
+//
+// lpContext - A pointer to a CONTEXT structure that contains the context to be set in the specified thread.
+//
+// returns non-zero value, zero otherwise
+func SetThreadContextCall(hThread uintptr, context CONTEXT) (int, error) {
+	retval, _, err := SetThreadContext.Call(
+		hThread,
+		(uintptr)(unsafe.Pointer(&context)),
+	)
+	if retval == 0 {
+		return 0, err
+	}
+	return int(retval), nil
+}
+
+// TODO
+// Creates a new process and its primary thread. The new process runs in the security context of the calling process.
+// RTFM at https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa
+//
+// lpApplicationName - The name of the module to be executed. This module can be a Windows-based application. It can be some other type of module
+//
+// lpCommandLine - The command line to be executed.
+//
+// lpProcessAttributes - A pointer to a SECURITY_ATTRIBUTES structure that determines whether the returned handle to the new process object can be inherited by child processes. If lpProcessAttributes is NULL, the handle cannot be inherited.
+//
+// lpThreadAttributes - A pointer to a SECURITY_ATTRIBUTES structure that determines whether the returned handle to the new thread object can be inherited by child processes. If lpThreadAttributes is NULL, the handle cannot be inherited.
+//
+// bInheritHandles - If this parameter is TRUE, each inheritable handle in the calling process is inherited by the new process. If the parameter is FALSE, the handles are not inherited.
+//
+// dwCreationFlags - The flags that control the priority class and the creation of the process (https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags)
+//
+// lpEnvironment - A pointer to the environment block for the new process. If this parameter is NULL, the new process uses the environment of the calling process.
+//
+// lpCurrentDirectory - The full path to the current directory for the process. The string can also specify a UNC path.
+//
+// lpStartupInfo - A pointer to a STARTUPINFO or STARTUPINFOEX structure.
+//
+// lpProcessInformation -  pointer to a PROCESS_INFORMATION structure that receives identification information about the new process.
+//
+// returns a nonzero value upon success, 0 otherwise
+// func CreateProcessACall(lpApplicationName uintptr, lpCommandLine uintptr, lpProcessAttributes uintptr, lpThreadAttributes uintptr, bInheritHandles uintptr, dwCreationFlags uintptr, lpEnvironment uintptr, lpCurrentDirectory uintptr, lpStartupInfo uintptr, lpProcessInformation uintptr) (int, error) {
+// 	retval, _, err := createProcessA.Call(
+// 		lpApplicationName,
+// 		lpCommandLine,
+// 		lpProcessAttributes,
+// 		lpThreadAttributes,
+// 		bInheritHandles,
+// 		dwCreationFlags,
+// 		lpEnvironment,
+// 		lpCurrentDirectory,
+// 		lpStartupInfo,
+// 		lpProcessInformation,
+// 	)
+
+// 	if retval == 0 {
+// 		return 0, err
+// 	}
+// 	return int(retval), nil
+// }
