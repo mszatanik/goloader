@@ -27,6 +27,12 @@ const (
 	VM_WRITE                  = 0x0020
 	ALL_ACCESS                = 0x001F0FFF
 
+	THREAD_CREATE_FLAGS_CREATE_SUSPENDED   = 0x00000001
+	THREAD_CREATE_FLAGS_SKIP_THREAD_ATTACH = 0x00000002
+	THREAD_CREATE_FLAGS_HIDE_FROM_DEBUGGER = 0x00000004
+
+	PROCESS_ALL_ACCESS = 0x00100000
+
 	THREAD_DIRECT_IMPERSONATION      = 0x0200
 	THREAD_GET_CONTEXT               = 0x0008
 	THREAD_IMPERSONATE               = 0x0100
@@ -69,7 +75,39 @@ var (
 )
 
 var (
-	ntdll = syscall.NewLazyDLL("ntdll.dll")
+	modntdll = syscall.NewLazyDLL("ntdll.dll")
 
-	NtUnmapViewOfSection = ntdll.NewProc("NtUnmapViewOfSection")
+	procNtOpenProcess           = modntdll.NewProc("NtOpenProcess")
+	procNtCurrentProcess        = modntdll.NewProc("NtCurrentProcess")
+	procNtAllocateVirtualMemory = modntdll.NewProc("NtAllocateVirtualMemory")
+	procNtProtectVirtualMemory  = modntdll.NewProc("NtProtectVirtualMemory")
+	procNtWriteVirtualMemory    = modntdll.NewProc("NtWriteVirtualMemory")
+	procRtlCreateUserThread     = modntdll.NewProc("RtlCreateUserThread")
+	procNtCreateThread          = modntdll.NewProc("NtCreateThread")
+	procNtCreateThreadEx        = modntdll.NewProc("NtCreateThreadEx")
+	procNtWaitForSingleObject   = modntdll.NewProc("NtWaitForSingleObject")
+	NtUnmapViewOfSection        = modntdll.NewProc("NtUnmapViewOfSection")
 )
+
+type (
+	HANDLE    uintptr
+	NTSTATUS  int32
+	PVOID     uintptr
+	SIZE_T    uintptr
+	ULONG     uint32
+	ULONG_PTR uintptr
+)
+
+type CLIENT_ID struct {
+	UniqueProcess uintptr
+	UniqueThread  uintptr
+}
+
+type OBJECT_ATTRIBUTES struct {
+	Length                   uint32
+	RootDirectory            uintptr
+	ObjectName               uintptr
+	Attributes               uint32
+	SecurityDescriptor       uintptr
+	SecurityQualityOfService uintptr
+}

